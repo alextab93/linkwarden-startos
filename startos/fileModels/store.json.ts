@@ -5,6 +5,7 @@ const shape = z.object({
   nextAuthSecret: z.string(),
   postgresPassword: z.string(),
   meiliMasterKey: z.string(),
+  primaryDomain: z.string().optional().catch(undefined),
   registrationDisabled: z.boolean().catch(false),
   smtp: smtpShape,
 })

@@ -4,6 +4,14 @@ Linkwarden is a collaborative bookmark manager that archives web pages and makes
 
 The package runs Linkwarden v2.14.1 with PostgreSQL 16 and Meilisearch v1.12.8. Only the Linkwarden web interface is exported. PostgreSQL and Meilisearch are reachable only through StartOS bridge-only bindings.
 
+## Quick start (StartOS)
+
+Install Linkwarden from the start9.tabordalab.com (TabordaLab StartOS registry), or sideload the `.s9pk` package.
+
+<img width="1419" height="527" alt="image" src="https://github.com/user-attachments/assets/38d7f4f6-73e2-4b8d-a855-b00aa41f852f" />
+
+## Persistent data
+
 Persistent state is stored in the `main` volume:
 
 - `linkwarden-data` contains archives and uploads.
@@ -12,10 +20,6 @@ Persistent state is stored in the `main` volume:
 - `startos/store.json` contains StartOS-managed secrets and settings.
 
 On installation, the package generates the NextAuth secret, PostgreSQL password, and Meilisearch master key. Registration is enabled initially. Configure registration and SMTP with the StartOS actions.
-
-The canonical URL is selected deterministically from non-local StartOS UI addresses: onion address, domain name, IPv4, then IPv6. Values within a class are sorted lexicographically. This address is used for `BASE_URL` and `NEXTAUTH_URL`.
-
-Private-network archiving and insecure TLS are permanently disabled in this MVP.
 
 ## Hardware requirements
 

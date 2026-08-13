@@ -8,7 +8,7 @@ import {
   postgresPort,
   selectCanonicalBase,
   smtpEnvironment,
-  uiHostId,
+  getUiInterfaceUrls,
   uiPort,
 } from './utils'
 
@@ -30,19 +30,29 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const store = await storeJson.read((value) => value).const(effects)
   if (!store) throw new Error('Linkwarden has not been initialized.')
 
-  const uiUrls = await sdk.host
-    .getOwn(
-      effects,
-      uiHostId,
-      (host) =>
-        host?.bindings[uiPort]?.interfaces.ui?.addressInfo.format(
-          'urlstring',
-        ) ?? [],
+  const uiUrls = await getUiInterfaceUrls(effects)
+
+  let baseUrl = ''
+
+  if (store.primaryDomain) {
+    try {
+      baseUrl = new URL(store.primaryDomain).origin
+    } catch {
+      console.warn(
+        `Invalid configured primary domain: ${store.primaryDomain}`,
+      )
+    }
+  }
+
+  if (!baseUrl) {
+    baseUrl = selectCanonicalBase(uiUrls)
+  }
+
+  if (!baseUrl) {
+    throw new Error(
+      'Linkwarden has no non-local canonical interface address.',
     )
-    .const()
-  const baseUrl = selectCanonicalBase(uiUrls)
-  if (!baseUrl)
-    throw new Error('Linkwarden has no non-local canonical interface address.')
+  }
 
   const postgresAddress = await sdk.host
     .getBridgeAddress(effects, {
