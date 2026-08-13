@@ -1,0 +1,29 @@
+{
+  "name": "linkwarden-startos",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf javascript && ncc build startos/index.ts -o javascript",
+    "check": "tsc --noEmit",
+    "format": "prettier --write startos test .ai-workspace README.md instructions.md package.json package-lock.json tsconfig.json",
+    "format:check": "prettier --check startos test .ai-workspace README.md instructions.md package.json package-lock.json tsconfig.json",
+    "test": "node --experimental-strip-types --test test/**/*.test.mjs"
+  },
+  "dependencies": {
+    "@start9labs/start-sdk": "2.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@vercel/ncc": "^0.38.4",
+    "prettier": "^3.6.2",
+    "typescript": "^6.0.3"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true
+  },
+  "overrides": {
+    "@start9labs/start-sdk": "$@start9labs/start-sdk"
+  }
+}
