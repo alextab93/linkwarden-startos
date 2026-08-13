@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { mountBackupTarget } from '@start9labs/start-sdk/lib/backup/Backups'
 import { sdk } from './sdk'
 import { storeJson } from './fileModels/store.json'
@@ -7,6 +8,8 @@ const postgresUser = 'postgres'
 const postgresDataPath = '/var/lib/postgresql/postgres-data'
 const postgresDumpPath = `/backup-target/${postgresDatabase}-db.dump`
 const temporaryDumpPath = `/tmp/${postgresDatabase}-db.dump`
+
+const secret = () => randomBytes(48).toString('base64url')
 
 async function startPostgres(
   sub: Awaited<ReturnType<typeof sdk.SubContainer.eager>>,
@@ -40,21 +43,31 @@ export const { createBackup, restoreInit } = sdk.setupBackups(async () => {
       (await storeJson.read((value) => value.postgresPassword).once()) ?? '',
   })
     .addSync({
-      dataPath: '/media/startos/volumes/main/linkwarden-data',
-      backupPath: '/media/startos/backup/volumes/main/linkwarden-data',
+      dataPath: '/media/startos/volumes/main/linkwarden-data/',
+      backupPath: '/media/startos/backup/volumes/main/linkwarden-data/',
     })
     .addSync({
-      dataPath: '/media/startos/volumes/main/meili-data',
-      backupPath: '/media/startos/backup/volumes/main/meili-data',
+      dataPath: '/media/startos/volumes/main/meili-data/',
+      backupPath: '/media/startos/backup/volumes/main/meili-data/',
     })
     .addSync({
-      dataPath: '/media/startos/volumes/main/startos',
-      backupPath: '/media/startos/backup/volumes/main/startos',
+      dataPath: '/media/startos/volumes/main/startos/',
+      backupPath: '/media/startos/backup/volumes/main/startos/',
     })
 
   return backups.setPostRestore(async (effects) => {
-    const password =
-      (await storeJson.read((value) => value.postgresPassword).once()) ?? ''
+    let store = await storeJson.read((value) => value).once()
+
+    if (!store) {
+      store = {
+        nextAuthSecret: secret(),
+        postgresPassword: secret(),
+        meiliMasterKey: secret(),
+        registrationDisabled: false,
+        smtp: { selection: 'disabled', value: {} },
+      }
+      await storeJson.write(effects, store)
+    }
 
     await sdk.SubContainer.withTemp(
       effects,
@@ -82,6 +95,14 @@ export const { createBackup, restoreInit } = sdk.setupBackups(async () => {
         )
         await sub.execFail(
           ['initdb', '-D', postgresDataPath, '-U', postgresUser],
+          { user: postgresUser },
+        )
+        await sub.execFail(
+          [
+            'sh',
+            '-c',
+            `printf '%s\n' 'host all all all scram-sha-256' >> '${postgresDataPath}/pg_hba.conf'`,
+          ],
           { user: postgresUser },
         )
         await startPostgres(sub)
@@ -130,7 +151,7 @@ export const { createBackup, restoreInit } = sdk.setupBackups(async () => {
             '-d',
             postgresDatabase,
             '-c',
-            `ALTER USER ${postgresUser} WITH PASSWORD '${password}'`,
+            `ALTER USER ${postgresUser} WITH PASSWORD '${store.postgresPassword}'`,
           ],
           { user: postgresUser },
         )
